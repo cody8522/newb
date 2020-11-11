@@ -1,0 +1,6 @@
+library(tidyverse)
+library(ggrepel)
+library(ggimage)
+library(nflfastR)
+options(scipen = 9999)
+data <- readRDS(url('https://raw.githubusercontent.com/guga31bb/nflfastR-data/master/data/play_by_play_2020.rds'))
