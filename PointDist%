@@ -1,0 +1,29 @@
+library(tidyverse)
+library(ggimage)
+
+options(scipen = 9999)
+
+data <- read.csv(url('https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'))
+data <- data %>%
+  select(game_id, season, week, game_type,location, away_score,away_team, home_score, home_team, result, total, spread_line, away_spread_odds, home_spread_odds) %>%
+  filter(season == "2016"| season == "2017" | season == "2018" | season == "2019"| season =="2020")%>%
+  filter(game_type == "REG"|location == "Home")%>%
+  select(game_id,season,week,away_team,away_score,home_team,home_score,result,spread_line,away_spread_odds,home_spread_odds,total)
+
+data <- data %>%
+  mutate(margin = abs(result))
+
+margin <- count(data,data$margin)%>%
+  mutate(pct =n/sum(n))
+colnames(margin)[1] <- "wm"
+colnames(margin)[2] <- "freq"
+
+margin %>%
+  ggplot(aes(wm, pct))+
+  theme_bw()+
+  geom_histogram(stat = ("identity"),binwidth = 0.75) +
+  scale_x_continuous(breaks = 0:50)+
+  scale_y_continuous(labels=scales::percent)+
+  xlab("Final Margin") +
+  ylab("Percentage of Games") +
+  labs(title="Distribution of Final Score Margins 2016-2020")
