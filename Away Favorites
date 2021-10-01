@@ -36,9 +36,18 @@ af_results <- a_favorites %>%
   mutate(cover_full_loss = sum (cover_full == "0"))%>%
   mutate(cover_full_push = sum (cover_full == "2"))%>%
   mutate(away_spread_odds_half = away_spread_odds - 25)%>%
+  mutate(away_spread_odds_half = ifelse(away_spread_odds_half < 0, away_spread_odds_half, (ifelse(away_spread_odds_half >= 100, away_spread_odds_half, ifelse(away_spread_odds_half <100, -100 - (100-away_spread_odds_half),"0")))))%>%
   mutate(away_spread_odds_full = away_spread_odds - 45)%>%
+  mutate(away_spread_odds_full = ifelse(away_spread_odds_full < 0, away_spread_odds_full, (ifelse(away_spread_odds_full >= 100, away_spread_odds_full, ifelse(away_spread_odds_full <100, -100 - (100-away_spread_odds_full),"0")))))%>%
   ungroup()%>%
-  mutate(PL = ifelse(away_spread_odds <0, ifelse(cover_spread =="1", (100/(-away_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", away_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
+  mutate(PL = ifelse(away_spread_odds <0, ifelse(cover_spread == "1",(100/(-away_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", away_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
   mutate(PL_half = ifelse(away_spread_odds_half <0, ifelse(cover_half == "1",(100/(-away_spread_odds_half/100)),ifelse(cover_half == "0", -100,"0")),ifelse(cover_half == "1", away_spread_odds_half, ifelse(cover_half == "0", -100,"0"))))%>%
   mutate(PL_full = ifelse(away_spread_odds_full <0, ifelse(cover_full == "1",(100/(-away_spread_odds_full/100)),ifelse(cover_full == "0", -100,"0")),ifelse(cover_full == "1", away_spread_odds_full, ifelse(cover_full == "0", -100,"0"))))%>%
   mutate(PL = as.numeric(PL),PL_half = as.numeric(PL_half),PL_full = as.numeric (PL_full))
+
+af_PL <- af_results %>%
+  group_by(spread_line)%>%
+  summarise(games = mean(games), win = mean(cover_t), loss = mean(cover_loss), push =mean(cover_push), win_half = mean(cover_half_t), loss_half = mean(cover_half_loss), push_half = mean(cover_half_push),win_full = mean(cover_full_t),loss_full = mean(cover_full_loss),push_full = mean(cover_full_push),PL = sum(PL),PL_Half= sum(PL_half),PL_Full = sum(PL_full))
+
+total_af_PL <-af_PL %>%
+  summarize(game= sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum (loss_half), push_half = sum(push_half),win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))
