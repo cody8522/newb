@@ -1,0 +1,208 @@
+library(tidyverse)
+library(ggimage)
+
+options(scipen = 9999)
+
+data <- read.csv(url('https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'))
+data <- data %>%
+  select(game_id, season, week, game_type,location, away_score,away_team, home_score, home_team, result, total, spread_line, away_spread_odds, home_spread_odds) %>%
+  filter(season == "2016"| season == "2017" | season == "2018" | season == "2019"| season =="2020")%>%
+  filter(game_type == "REG"|location == "Home")%>%
+  select(game_id,season,week,away_team,away_score,home_team,home_score,result,spread_line,away_spread_odds,home_spread_odds,total)
+
+data <- data %>%
+  mutate(margin = abs(result))
+
+##Home Favorites
+
+h_favorites <-data %>%
+  filter(spread_line >= 0)%>%
+  filter(spread_line == "3"| spread_line == "6"|spread_line == "7"|spread_line =="10"| spread_line =="14")%>%
+  mutate(half_tease = spread_line - 0.5, full_tease = spread_line - 1)%>%
+  mutate(cover_spread = ifelse(result == spread_line, "2", (ifelse(result > spread_line, "1", "0"))))%>%
+  mutate(cover_half = ifelse(result == half_tease, "2", (ifelse(result > half_tease, "1", "0"))))%>%
+  mutate(cover_full = ifelse(result == full_tease, "2", (ifelse(result > full_tease, "1", "0"))))
+
+hf_results <- hfavorites %>%
+  group_by(spread_line)%>%
+  mutate(games = n())%>%
+  mutate(cover_t = sum (cover_spread == "1"))%>%
+  mutate(cover_loss = sum (cover_spread == "0"))%>%
+  mutate(cover_push = sum (cover_spread == "2"))%>%
+  mutate(cover_half_t = sum (cover_half == "1"))%>%
+  mutate(cover_half_loss = sum (cover_half == "0"))%>%
+  mutate(cover_half_push = sum (cover_half == "2"))%>%
+  mutate(cover_full_t = sum (cover_full == "1"))%>%
+  mutate(cover_full_loss = sum (cover_full == "0"))%>%
+  mutate(cover_full_push = sum (cover_full == "2"))%>%
+  mutate(home_spread_odds_half = home_spread_odds - 25)%>%
+  mutate(home_spread_odds_half = ifelse(home_spread_odds_half < 0, home_spread_odds_half, (ifelse(home_spread_odds_half >= 100, home_spread_odds_half, ifelse(home_spread_odds_half <100, -100 - (100-home_spread_odds_half),"0")))))%>%
+  mutate(home_spread_odds_full = home_spread_odds - 45)%>%
+  mutate(home_spread_odds_full = ifelse(home_spread_odds_full < 0, home_spread_odds_full, (ifelse(home_spread_odds_full >= 100, home_spread_odds_full, ifelse(home_spread_odds_full <100, -100 - (100-home_spread_odds_full),"0")))))%>%
+  mutate(PL = ifelse(home_spread_odds <0, ifelse(cover_spread == "1",(100/(-home_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", home_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
+  mutate(PL_half = ifelse(home_spread_odds_half <0, ifelse(cover_half == "1",(100/(-home_spread_odds_half/100)),ifelse(cover_half == "0", -100,"0")),ifelse(cover_half == "1", home_spread_odds_half, ifelse(cover_half == "0", -100,"0"))))%>%
+  mutate(PL_full = ifelse(home_spread_odds_full <0, ifelse(cover_full == "1",(100/(-home_spread_odds_full/100)),ifelse(cover_full == "0", -100,"0")),ifelse(cover_full == "1", home_spread_odds_full, ifelse(cover_full == "0", -100,"0"))))%>%
+  mutate(PL = as.numeric(PL),PL_half = as.numeric(PL_half),PL_full = as.numeric (PL_full))
+
+hf_PL <- hf_results %>%
+  group_by(spread_line)%>%
+  summarise(games = mean(games), win = mean(cover_t), loss = mean(cover_loss), push =mean(cover_push), win_half = mean(cover_half_t), loss_half = mean(cover_half_loss), push_half = mean(cover_half_push),win_full = mean(cover_full_t),loss_full = mean(cover_full_loss),push_full = mean(cover_full_push),PL = sum(PL),PL_Half= sum(PL_half),PL_Full = sum(PL_full))%>%
+  add_column(Type = "HF", .before = "spread_line")
+
+total_hf_PL <-hf_PL %>%
+  summarize(games= sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum (loss_half), push_half = sum(push_half),win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))%>%
+  add_column(Type = "HF", .before = "games")
+
+
+##Away Favorites
+
+library(tidyverse)
+library(ggimage)
+
+options(scipen = 9999)
+
+data <- read.csv(url('https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'))
+data <- data %>%
+  select(game_id, season, week, game_type,location, away_score,away_team, home_score, home_team, result, total, spread_line, away_spread_odds, home_spread_odds) %>%
+  filter(season == "2016"| season == "2017" | season == "2018" | season == "2019"| season =="2020")%>%
+  filter(game_type == "REG"|location == "Home")%>%
+  select(game_id,season,week,away_team,away_score,home_team,home_score,result,spread_line,away_spread_odds,home_spread_odds,total)
+
+data <- data %>%
+  mutate(margin = abs(result))
+
+a_favorites <-data %>%
+  filter(spread_line < 0)%>%
+  filter(spread_line == "-3"| spread_line == "-6"|spread_line == "-7"|spread_line == "-10"| spread_line == "-14")%>%
+  mutate(half_tease = spread_line + 0.5, full_tease = spread_line + 1)%>%
+  mutate(cover_spread = ifelse(result == spread_line, "2", (ifelse(result < spread_line, "1", "0"))))%>%
+  mutate(cover_half = ifelse(result == half_tease, "2", (ifelse(result < half_tease, "1", "0"))))%>%
+  mutate(cover_full = ifelse(result == full_tease, "2", (ifelse(result < full_tease, "1", "0"))))
+
+af_results <- a_favorites %>%
+  group_by(spread_line)%>%
+  mutate(spread_line = as.double(spread_line))%>%
+  mutate(spread_line = as.numeric(spread_line))%>%
+  mutate(games = n())%>%
+  mutate(cover_t = sum (cover_spread == "1"))%>%
+  mutate(cover_loss = sum (cover_spread == "0"))%>%
+  mutate(cover_push = sum (cover_spread == "2"))%>%
+  mutate(cover_half_t = sum (cover_half == "1"))%>%
+  mutate(cover_half_loss = sum (cover_half == "0"))%>%
+  mutate(cover_half_push = sum (cover_half == "2"))%>%
+  mutate(cover_full_t = sum (cover_full == "1"))%>%
+  mutate(cover_full_loss = sum (cover_full == "0"))%>%
+  mutate(cover_full_push = sum (cover_full == "2"))%>%
+  mutate(away_spread_odds_half = away_spread_odds - 25)%>%
+  mutate(away_spread_odds_half = ifelse(away_spread_odds_half < 0, away_spread_odds_half, (ifelse(away_spread_odds_half >= 100, away_spread_odds_half, ifelse(away_spread_odds_half <100, -100 - (100-away_spread_odds_half),"0")))))%>%
+  mutate(away_spread_odds_full = away_spread_odds - 45)%>%
+  mutate(away_spread_odds_full = ifelse(away_spread_odds_full < 0, away_spread_odds_full, (ifelse(away_spread_odds_full >= 100, away_spread_odds_full, ifelse(away_spread_odds_full <100, -100 - (100-away_spread_odds_full),"0")))))%>%
+  ungroup()%>%
+  mutate(PL = ifelse(away_spread_odds <0, ifelse(cover_spread == "1",(100/(-away_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", away_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
+  mutate(PL_half = ifelse(away_spread_odds_half <0, ifelse(cover_half == "1",(100/(-away_spread_odds_half/100)),ifelse(cover_half == "0", -100,"0")),ifelse(cover_half == "1", away_spread_odds_half, ifelse(cover_half == "0", -100,"0"))))%>%
+  mutate(PL_full = ifelse(away_spread_odds_full <0, ifelse(cover_full == "1",(100/(-away_spread_odds_full/100)),ifelse(cover_full == "0", -100,"0")),ifelse(cover_full == "1", away_spread_odds_full, ifelse(cover_full == "0", -100,"0"))))%>%
+  mutate(PL = as.numeric(PL),PL_half = as.numeric(PL_half),PL_full = as.numeric (PL_full))
+
+af_PL <- af_results %>%
+  group_by(spread_line)%>%
+  summarise(games = mean(games), win = mean(cover_t), loss = mean(cover_loss), push =mean(cover_push), win_half = mean(cover_half_t), loss_half = mean(cover_half_loss), push_half = mean(cover_half_push),win_full = mean(cover_full_t),loss_full = mean(cover_full_loss),push_full = mean(cover_full_push),PL = sum(PL),PL_Half= sum(PL_half),PL_Full = sum(PL_full))%>%
+  add_column(Type = "AF", .before = "spread_line")
+
+total_af_PL <-af_PL %>%
+  summarize(games= sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum (loss_half), push_half = sum(push_half),win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))%>%
+  add_column(Type = "AF", .before = "games")
+
+#Away Underdogs
+a_underdogs <-data %>%
+  filter(spread_line > 0)%>%
+  filter(spread_line == "3"| spread_line == "6"|spread_line == "7"|spread_line == "10"| spread_line == "14")%>%
+  mutate(half_tease = spread_line + 0.5, full_tease = spread_line + 1)%>%
+  mutate(cover_spread = ifelse(result == spread_line, "2", (ifelse(result < spread_line, "1", "0"))))%>%
+  mutate(cover_half = ifelse(result == half_tease, "2", (ifelse(result < half_tease, "1", "0"))))%>%
+  mutate(cover_full = ifelse(result == full_tease, "2", (ifelse(result < full_tease, "1", "0"))))
+
+au_results <- a_underdogs %>%
+  group_by(spread_line)%>%
+  mutate(spread_line = as.double(spread_line))%>%
+  mutate(spread_line = as.numeric(spread_line))%>%
+  mutate(games = n())%>%
+  mutate(cover_t = sum (cover_spread == "1"))%>%
+  mutate(cover_loss = sum (cover_spread == "0"))%>%
+  mutate(cover_push = sum (cover_spread == "2"))%>%
+  mutate(cover_half_t = sum (cover_half == "1"))%>%
+  mutate(cover_half_loss = sum (cover_half == "0"))%>%
+  mutate(cover_half_push = sum (cover_half == "2"))%>%
+  mutate(cover_full_t = sum (cover_full == "1"))%>%
+  mutate(cover_full_loss = sum (cover_full == "0"))%>%
+  mutate(cover_full_push = sum (cover_full == "2"))%>%
+  mutate(away_spread_odds_half = away_spread_odds - 25)%>%
+  mutate(away_spread_odds_half = ifelse(away_spread_odds_half < 0, away_spread_odds_half, (ifelse(away_spread_odds_half >= 100, away_spread_odds_half, ifelse(away_spread_odds_half <100, -100 - (100-away_spread_odds_half),"0")))))%>%
+  mutate(away_spread_odds_full = away_spread_odds - 45)%>%
+  mutate(away_spread_odds_full = ifelse(away_spread_odds_full < 0, away_spread_odds_full, (ifelse(away_spread_odds_full >= 100, away_spread_odds_full, ifelse(away_spread_odds_full <100, -100 - (100-away_spread_odds_full),"0")))))%>%
+  ungroup()%>%
+  mutate(PL = ifelse(away_spread_odds <0, ifelse(cover_spread == "1",(100/(-away_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", away_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
+  mutate(PL_half = ifelse(away_spread_odds_half <0, ifelse(cover_half == "1",(100/(-away_spread_odds_half/100)),ifelse(cover_half == "0", -100,"0")),ifelse(cover_half == "1", away_spread_odds_half, ifelse(cover_half == "0", -100,"0"))))%>%
+  mutate(PL_full = ifelse(away_spread_odds_full <0, ifelse(cover_full == "1",(100/(-away_spread_odds_full/100)),ifelse(cover_full == "0", -100,"0")),ifelse(cover_full == "1", away_spread_odds_full, ifelse(cover_full == "0", -100,"0"))))%>%
+  mutate(PL = as.numeric(PL),PL_half = as.numeric(PL_half),PL_full = as.numeric (PL_full))
+
+au_PL <- au_results %>%
+  group_by(spread_line)%>%
+  summarise(games = mean(games), win = mean(cover_t), loss = mean(cover_loss), push =mean(cover_push), win_half = mean(cover_half_t), loss_half = mean(cover_half_loss), push_half = mean(cover_half_push),win_full = mean(cover_full_t),loss_full = mean(cover_full_loss),push_full = mean(cover_full_push),PL = sum(PL),PL_Half= sum(PL_half),PL_Full = sum(PL_full))%>%
+  add_column(Type = "AU", .before = "spread_line")
+
+total_au_PL <-au_PL %>%
+  summarize(games= sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum (loss_half), push_half = sum(push_half),win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))%>%
+  add_column(Type = "AU", .before = "games")
+
+#Home Underdogs
+h_underdogs <-data %>%
+  filter(spread_line < 0)%>%
+  filter(spread_line == "-3"| spread_line == "-6"|spread_line == "-7"|spread_line == "-10"| spread_line == "-14")%>%
+  mutate(half_tease = spread_line - 0.5, full_tease = spread_line - 1)%>%
+  mutate(cover_spread = ifelse(result == spread_line, "2", (ifelse(result > spread_line, "1", "0"))))%>%
+  mutate(cover_half = ifelse(result == half_tease, "2", (ifelse(result > half_tease, "1", "0"))))%>%
+  mutate(cover_full = ifelse(result == full_tease, "2", (ifelse(result > full_tease, "1", "0"))))
+
+hu_results <- h_underdogs %>%
+  group_by(spread_line)%>%
+  mutate(spread_line = as.double(spread_line))%>%
+  mutate(spread_line = as.numeric(spread_line))%>%
+  mutate(games = n())%>%
+  mutate(cover_t = sum (cover_spread == "1"))%>%
+  mutate(cover_loss = sum (cover_spread == "0"))%>%
+  mutate(cover_push = sum (cover_spread == "2"))%>%
+  mutate(cover_half_t = sum (cover_half == "1"))%>%
+  mutate(cover_half_loss = sum (cover_half == "0"))%>%
+  mutate(cover_half_push = sum (cover_half == "2"))%>%
+  mutate(cover_full_t = sum (cover_full == "1"))%>%
+  mutate(cover_full_loss = sum (cover_full == "0"))%>%
+  mutate(cover_full_push = sum (cover_full == "2"))%>%
+  mutate(home_spread_odds_half = home_spread_odds - 25)%>%
+  mutate(home_spread_odds_half = ifelse(home_spread_odds_half < 0, home_spread_odds_half, (ifelse(home_spread_odds_half >= 100, home_spread_odds_half, ifelse(home_spread_odds_half <100, -100 - (100-home_spread_odds_half),"0")))))%>%
+  mutate(home_spread_odds_full = home_spread_odds - 45)%>%
+  mutate(home_spread_odds_full = ifelse(home_spread_odds_full < 0, home_spread_odds_full, (ifelse(home_spread_odds_full >= 100, home_spread_odds_full, ifelse(home_spread_odds_full <100, -100 - (100-home_spread_odds_full),"0")))))%>%
+  ungroup()%>%
+  mutate(PL = ifelse(home_spread_odds <0, ifelse(cover_spread == "1",(100/(-home_spread_odds/100)),ifelse(cover_spread == "0", -100,"0")),ifelse(cover_spread == "1", home_spread_odds, ifelse(cover_spread == "0", -100,"0"))))%>%
+  mutate(PL_half = ifelse(home_spread_odds_half <0, ifelse(cover_half == "1",(100/(-home_spread_odds_half/100)),ifelse(cover_half == "0", -100,"0")),ifelse(cover_half == "1", home_spread_odds_half, ifelse(cover_half == "0", -100,"0"))))%>%
+  mutate(PL_full = ifelse(home_spread_odds_full <0, ifelse(cover_full == "1",(100/(-home_spread_odds_full/100)),ifelse(cover_full == "0", -100,"0")),ifelse(cover_full == "1", home_spread_odds_full, ifelse(cover_full == "0", -100,"0"))))%>%
+  mutate(PL = as.numeric(PL),PL_half = as.numeric(PL_half),PL_full = as.numeric (PL_full))
+
+hu_PL <- hu_results %>%
+  group_by(spread_line)%>%
+  summarise(games = mean(games), win = mean(cover_t), loss = mean(cover_loss), push =mean(cover_push), win_half = mean(cover_half_t), loss_half = mean(cover_half_loss), push_half = mean(cover_half_push),win_full = mean(cover_full_t),loss_full = mean(cover_full_loss),push_full = mean(cover_full_push),PL = sum(PL),PL_Half= sum(PL_half),PL_Full = sum(PL_full))%>%
+  add_column(Type = "HU", .before = "spread_line")
+
+total_hu_PL <-hu_PL %>%
+  summarize(games= sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum (loss_half), push_half = sum(push_half),win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))%>%
+  add_column(Type = "HU", .before = "games")
+
+#Combine All PL and Total PL
+
+Spread_PL <- rbind(hf_PL, hu_PL, af_PL, au_PL)
+  
+Spread_PL_Total <- Spread_PL%>%
+  group_by(spread_line)%>%
+  summarize(games = sum(games), win = sum(win), loss = sum(loss), push = sum(push), win_half = sum(win_half), loss_half = sum(loss_half), push_half = sum(push_half), win_full = sum(win_full), loss_full = sum(loss_full), push_full = sum(push_full), PL = sum(PL), PL_Half = sum(PL_Half), PL_Full = sum(PL_Full))
+  
+Total_PL <- rbind(total_hf_PL, total_hu_PL, total_af_PL, total_au_PL)
+
