@@ -1,0 +1,24 @@
+library(tidyverse)
+library(dplyr)
+library(ggrepel)
+library(ggimage)
+library(nflfastR)
+options(scipen = 9999)
+
+data <- readRDS(url('https://raw.githubusercontent.com/guga31bb/nflfastR-data/master/data/play_by_play_2021.rds'))
+
+plays <- data %>%
+  filter(posteam == 'KC')%>%
+  summarize(game_id, week, play_id, play_type, yards_gained, shotgun, epa)
+  
+
+shotgun_pass <- plays %>%
+  filter(play_type == 'pass')
+
+shotgun_run <- plays %>%
+  filter(play_type == 'run')
+
+shotgun_total <- rbind(shotgun_pass, shotgun_run)%>%
+  ungroup()%>%
+  group_by(shotgun, play_type)%>%
+  summarize(epa = mean(epa), YPA = sum(yards_gained)/n(), plays = n())
